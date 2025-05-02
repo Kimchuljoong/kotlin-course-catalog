@@ -28,7 +28,7 @@ dependencies {
 	implementation("io.github.microutils:kotlin-logging:3.0.5")
 
 	runtimeOnly("com.h2database:h2")
-	runtimeOnly("org.postgresql:postgresql")
+//	runtimeOnly("org.postgresql:postgresql")
 
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
