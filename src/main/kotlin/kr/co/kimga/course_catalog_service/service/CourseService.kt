@@ -3,6 +3,7 @@ package kr.co.kimga.course_catalog_service.service
 import kr.co.kimga.course_catalog_service.dto.CourseDTO
 import kr.co.kimga.course_catalog_service.entity.Course
 import kr.co.kimga.course_catalog_service.exception.CourseNotFoundException
+import kr.co.kimga.course_catalog_service.exception.InstructorNotValidException
 import kr.co.kimga.course_catalog_service.repository.CourseRepository
 import mu.KotlinLogging
 import org.springframework.stereotype.Service
@@ -12,12 +13,17 @@ private val logger = KotlinLogging.logger { }
 
 @Service
 class CourseService(
-    private val courseRepository: CourseRepository
+    private val courseRepository: CourseRepository,
+    private val instructorService: InstructorService
 ) {
 
     fun addCourse(courseDTO: CourseDTO): CourseDTO {
+
+        val findInstructor = instructorService.findByInstructorId(courseDTO.instructorId!!)
+            .orElseThrow { InstructorNotValidException("Instructor Not Valid for the Id: ${courseDTO.instructorId}") }
+
         val newCourse = courseDTO.let {
-            Course(null, it.name, it.category)
+            Course(null, it.name, it.category, findInstructor)
         }
 
         val savedCourse = courseRepository.save(newCourse)
@@ -25,7 +31,7 @@ class CourseService(
         logger.info { "saved course is $savedCourse" }
 
         return savedCourse.let {
-            CourseDTO(it.id, it.name, it.category)
+            CourseDTO(it.id, it.name, it.category, it.instructor!!.id)
         }
     }
 

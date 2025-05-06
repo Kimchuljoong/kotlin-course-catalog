@@ -4,7 +4,10 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import kr.co.kimga.course_catalog_service.dto.CourseDTO
 import kr.co.kimga.course_catalog_service.entity.Course
 import kr.co.kimga.course_catalog_service.repository.CourseRepository
+import kr.co.kimga.course_catalog_service.repository.InstructorRepository
+import kr.co.kimga.course_catalog_service.util.PostgresSQLContainerInitializer
 import kr.co.kimga.course_catalog_service.util.courseEntityList
+import kr.co.kimga.course_catalog_service.util.instructorEntity
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -18,7 +21,7 @@ import org.springframework.web.util.UriComponentsBuilder
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 @AutoConfigureWebTestClient
-class CourseControllerIntgTest {
+class CourseControllerIntgTest: PostgresSQLContainerInitializer() {
 
     @Autowired
     lateinit var webTestClient: WebTestClient
@@ -26,17 +29,30 @@ class CourseControllerIntgTest {
     @Autowired
     lateinit var courseRepository: CourseRepository
 
+    @Autowired
+    lateinit var instructorRepository: InstructorRepository
+
     @BeforeEach
     fun setUp() {
         courseRepository.deleteAll()
-        val courses = courseEntityList()
+        instructorRepository.deleteAll()
+
+        val instructor = instructorEntity()
+        instructorRepository.save(instructor)
+
+        val courses = courseEntityList(instructor)
         courseRepository.saveAll(courses)
     }
 
     @Test
     fun addCourse() {
 
-        val courseDTO = CourseDTO(null, "Build Restful APIs using SpringBoot and Kotlin", "study")
+        val instructor = instructorRepository.findAll().first()
+
+        val courseDTO = CourseDTO(
+            null,
+            "Build Restful APIs using SpringBoot and Kotlin",
+            "study", instructor.id)
 
         val savedCourseDTO = webTestClient.post()
             .uri("/v1/courses")
@@ -88,17 +104,21 @@ class CourseControllerIntgTest {
     @Test
     fun updateCourse() {
 
+        val instructor = instructorRepository.findAll().first()
+
         val course = Course(
             null,
             "Build Restful APIs using SpringBoot and Kotlin",
-            "Development"
+            "Development",
+            instructor,
         )
         courseRepository.save(course)
 
         val courseDTO = CourseDTO(
             null,
             "Build Restful APIs using SpringBoot and Kotlin1",
-            "Development"
+            "Development",
+            course.instructor!!.id,
         )
 
         val updatedCourse = webTestClient.put()
@@ -116,10 +136,13 @@ class CourseControllerIntgTest {
     @Test
     fun deleteCourse() {
 
+        val instructor = instructorRepository.findAll().first()
+
         val course = Course(
             null,
             "Build Restful APIs using SpringBoot and Kotlin",
-            "Development"
+            "Development",
+            instructor,
         )
         courseRepository.save(course)
 
